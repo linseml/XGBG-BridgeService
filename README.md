@@ -43,7 +43,7 @@ dependencyResolutionManagement {
 implementation 'com.github.YOUR_GITHUB_USERNAME:XGBG-BridgeService:1.0.0'
 ```
 
-implementation 'com.github.Leesin:XGBG-BridgeService:1.0.0'
+implementation 'com.github.linseml:XGBG-BridgeService:1.0.0'
 
 ## License
 
