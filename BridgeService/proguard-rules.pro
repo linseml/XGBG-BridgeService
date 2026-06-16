@@ -4,10 +4,7 @@
 # ========================
 # 基类
 # ========================
--keep class com.ddmh.bridge.service.BaseApplication { *; }
--keep class com.ddmh.bridge.service.base.BaseVMActivity { *; }
--keep class com.ddmh.bridge.service.base.BaseVMFragment { *; }
--keep class com.ddmh.bridge.service.base.BaseViewModel { *; }
+-keep class com.ddmh.bridge.service.base.BaseApplication { *; }
 
 # ========================
 # Helper 单例对象
@@ -17,6 +14,7 @@
 -keep class com.ddmh.bridge.service.helper.AppHelper { *; }
 -keep class com.ddmh.bridge.service.helper.FirebaseHelper { *; }
 -keep class com.ddmh.bridge.service.helper.GooglePay { *; }
+-keep class com.ddmh.bridge.service.helper.SmartRefreshHelper { *; }
 
 # ========================
 # Utils 单例对象
@@ -45,10 +43,9 @@
 -keep class * implements com.google.gson.TypeAdapterFactory
 -keep class * implements com.google.gson.JsonSerializer
 -keep class * implements com.google.gson.JsonDeserializer
-# Gson 与泛型 - 防止擦除类型信息
--keep class * {
+# Gson 与泛型 — 仅保持库内使用 Gson 反射序列化/反序列化的类
+-keep class com.ddmh.bridge.service.** {
     <fields>;
-    public <methods>;
 }
 
 # AppsFlyer SDK
@@ -66,3 +63,13 @@
 # ThinkingAnalytics (数数) SDK
 -keep class cn.thinkingdata.android.** { *; }
 -dontwarn cn.thinkingdata.android.**
+
+# Firebase Analytics SDK
+-keep class com.google.firebase.** { *; }
+-keep class com.google.android.gms.measurement.** { *; }
+-dontwarn com.google.firebase.**
+-dontwarn com.google.android.gms.measurement.**
+
+# SmartRefreshLayout
+-keep class com.scwang.smart.refresh.** { *; }
+-dontwarn com.scwang.smart.refresh.**

@@ -9,6 +9,7 @@ android {
 
     defaultConfig {
         minSdk 24
+        consumerProguardFiles 'proguard-rules.pro'
     }
 
     compileOptions {
@@ -17,6 +18,12 @@ android {
     }
     kotlinOptions {
         jvmTarget = '21'
+    }
+
+    buildFeatures {
+        dataBinding true
+        viewBinding true
+        buildConfig true
     }
 }
 
@@ -60,15 +67,28 @@ dependencies {
     implementation 'androidx.core:core-ktx:1.12.0'
     implementation 'androidx.appcompat:appcompat:1.6.1'
 
-    implementation 'com.google.code.gson:gson:2.14.0'
+    // Gson — 公开 API 暴露 Gson 类型（GsonHolder.instance 返回 Gson）
+    api 'com.google.code.gson:gson:2.14.0'
 
-    // AppsFlyer 归因
+    // XPopup — 公开基类继承 XPopup 类型（XPopupBottom/Center/Position/Attach/Drawer）
+    api 'com.github.li-xiaojun:XPopup:2.10.0'
+
+    // SmartRefreshLayout — 仅 SmartRefreshHelper 内部使用反射，公开 API 不暴露 SDK 类型
+    implementation 'io.github.scwang90:refresh-layout-kernel:2.1.0'
+    implementation 'io.github.scwang90:refresh-header-classics:2.1.0'
+
+    // AppsFlyer 归因 — 公开 API 仅用标准类型，SDK 类型全部内部使用
     implementation 'com.appsflyer:af-android-sdk:6.18.0'
     implementation 'com.android.installreferrer:installreferrer:2.2'
     implementation 'com.appsflyer:purchase-connector:2.2.0'
 
-    //数数Agentic Engine
+    //数数Agentic Engine — 公开 API 仅用 JSONObject/HashMap，SDK 类型全部内部使用
     implementation 'cn.thinkingdata.android:ThinkingAnalyticsSDK:3.4.2'
 
+    // Firebase Analytics — 公开 API 仅用 Bundle/HashMap/String，SDK 类型全部内部使用
+    implementation platform('com.google.firebase:firebase-bom:33.13.0')
+    implementation 'com.google.firebase:firebase-analytics'
 
+    //Google支付 — 公开 API 暴露 Purchase/ProductDetails/BillingClient 类型（OnPayResultListener、GooglePay）
+    api 'com.android.billingclient:billing:8.3.0'
 }

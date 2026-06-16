@@ -21,6 +21,8 @@ dependencyResolutionManagement {
         mavenCentral()
         // 数数 ThinkingAnalytics SDK 所在的 Maven 仓库
         maven { url 'https://artifact.thinkingdata.io/release' }
+        // JitPack 仓库 — com.github.* 的依赖（如 XPopup）在此托管
+        maven { url 'https://jitpack.io' }
     }
 }
 

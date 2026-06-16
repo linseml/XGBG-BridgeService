@@ -1,9 +1,11 @@
 package com.ddmh.bridge.service.helper
 
-import android.content.Context
-import android.util.Log
 import cn.thinkingdata.analytics.TDAnalytics
 import cn.thinkingdata.analytics.TDConfig
+import com.ddmh.bridge.service.ext.context
+import com.ddmh.bridge.service.helper.AEHelper.track
+import com.ddmh.bridge.service.helper.Constant.TAG
+import com.ddmh.bridge.service.utils.LogX
 import org.json.JSONObject
 
 /**
@@ -14,19 +16,16 @@ import org.json.JSONObject
  */
 object AEHelper {
 
-    const val TAG = "TAG-AE"
-
     /**
      * 初始化数数 SDK
      *
      * 由接入方在 Application.onCreate 中调用，传入 appId 和 serverUrl。
      * 通过 [AppHelper.isDebug] 判断当前是否为 Debug 环境，决定是否开启 SDK 日志。
      *
-     * @param context  应用上下文
      * @param appId    数数项目 appId，由接入方提供
      * @param serverUrl 数数数据上报地址，由接入方提供
      */
-    fun initSDK(context: Context, appId: String, serverUrl: String) {
+    fun initSDK(appId: String, serverUrl: String) {
         val config = TDConfig.getInstance(context, appId, serverUrl)
         TDAnalytics.enableLog(AppHelper.isDebug())
         TDAnalytics.init(config)
@@ -43,14 +42,14 @@ object AEHelper {
             if (event != null) {
                 val properties = JSONObject(event as Map<*, *>)
                 TDAnalytics.track(code, properties)
-                Log.d(TAG, "track: code = $code, properties = $properties")
+                LogX.d(TAG, "数数埋点：code = $code \n event = $properties")
             } else {
                 TDAnalytics.track(code)
-                Log.d(TAG, "track: code = $code")
+                LogX.d(TAG, "数数埋点：code = $code")
             }
         } catch (t: Throwable) {
             // 上报异常兜底，确保 SDK 问题不影响应用正常运行
-            Log.d(TAG, "track异常: code = $code, ${t.message}")
+            LogX.e(TAG, "数数埋点异常: code = $code, ${t.message}")
         }
     }
 

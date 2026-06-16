@@ -1,6 +1,6 @@
 package com.ddmh.xgbg.service
 
-import com.ddmh.bridge.service.BaseApplication
+import com.ddmh.bridge.service.base.BaseApplication
 
 /**
  * @Description: 

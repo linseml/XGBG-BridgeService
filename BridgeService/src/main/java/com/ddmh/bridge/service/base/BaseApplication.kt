@@ -1,10 +1,9 @@
-package com.ddmh.bridge.service
+package com.ddmh.bridge.service.base
 
 import android.app.Application
-import com.ddmh.bridge.service.helper.AppHelper
 
 /**
- * @Description: 
+ * @Description:
  * @Author: 𝑳𝒆𝒆𝒔𝒊𝒏
  * @CreateDate: 2026/06/12 17:02
  * @Version: 1.0
