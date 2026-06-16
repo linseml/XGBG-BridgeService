@@ -7,4 +7,11 @@ package com.ddmh.bridge.service.helper
  * @Version: 1.0
  */
 object GooglePay {
+
+    /**
+     * 拉起google支付
+     */
+    fun launchPay(){
+
+    }
 }
