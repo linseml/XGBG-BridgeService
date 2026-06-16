@@ -1,0 +1,74 @@
+apply plugin: 'com.android.library'
+apply plugin: 'org.jetbrains.kotlin.android'
+apply plugin: 'maven-publish'
+
+android {
+    namespace 'com.ddmh.bridge.service'
+    //noinspection GradleDependency
+    compileSdk 35
+
+    defaultConfig {
+        minSdk 24
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_21
+        targetCompatibility JavaVersion.VERSION_21
+    }
+    kotlinOptions {
+        jvmTarget = '21'
+    }
+}
+
+// JitPack 发布配置
+afterEvaluate {
+    publishing {
+        publications {
+            release(MavenPublication) {
+                from components.release
+
+                groupId = 'com.ddmh'
+                artifactId = 'bridge-service'
+                version = project.findProperty('libVersion') ?: '1.0.0'
+
+                pom {
+                    name = 'BridgeService'
+                    description = 'Android bridge service library for DDMH XGBG'
+                    url = 'https://github.com/islinz/XGBG-BridgeService'
+                    licenses {
+                        license {
+                            name = 'The Apache License, Version 2.0'
+                            url = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
+                        }
+                    }
+                    developers {
+                        developer {
+                            id = 'islinz'
+                            name = 'islin'
+                        }
+                    }
+                    scm {
+                        url = 'https://github.com/islinz/XGBG-BridgeService'
+                    }
+                }
+            }
+        }
+    }
+}
+
+dependencies {
+    implementation 'androidx.core:core-ktx:1.12.0'
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+
+    implementation 'com.google.code.gson:gson:2.14.0'
+
+    // AppsFlyer 归因
+    implementation 'com.appsflyer:af-android-sdk:6.18.0'
+    implementation 'com.android.installreferrer:installreferrer:2.2'
+    implementation 'com.appsflyer:purchase-connector:2.2.0'
+
+    //数数Agentic Engine
+    implementation 'cn.thinkingdata.android:ThinkingAnalyticsSDK:3.4.2'
+
+
+}
