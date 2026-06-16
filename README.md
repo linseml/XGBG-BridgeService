@@ -43,7 +43,7 @@ dependencyResolutionManagement {
 implementation 'com.github.YOUR_GITHUB_USERNAME:XGBG-BridgeService:1.0.0'
 ```
 
-Replace `YOUR_GITHUB_USERNAME` with the actual GitHub username/org that owns this repository.
+implementation 'com.github.Leesin:XGBG-BridgeService:1.0.0'
 
 ## License
 
