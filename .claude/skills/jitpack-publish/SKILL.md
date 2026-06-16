@@ -1,7 +1,7 @@
 ---
 name: jitpack-publish
 description:
-  自动执行 Android 库的 JitPack 发布流程。包含自动读取和递增 gradle.properties 中的 libVersion（支持满百进位）、切换官方镜像并打 Tag 推送，解决国内镜像源导致的 JitPack 构建失败问题，避免构建时序冲突。TRIGGER when user mentions: 发布 JitPack, 打包 JitPack, 推送 JitPack, JitPack release。
+  自动执行 Android 库的 JitPack 发布流程。包含自动读取和递增 gradle.properties 中的 libVersion（支持满百进位）、切换官方镜像并打 Tag 推送、轮询构建状态直至成功或失败并输出原因，解决国内镜像源导致的 JitPack 构建失败问题，避免构建时序冲突。TRIGGER when user mentions: 发布 JitPack, 打包 JitPack, 推送 JitPack, JitPack release。
 ---
 
 你是一个 JitPack 发布助手。当用户调用 `/jitpack-publish` 或要求发布时，严格执行以下流程：
@@ -37,17 +37,53 @@ description:
 * 提交代码：`git add .` 并在 commit message 中注明 `chore: restore environment after release`。
 * 推送主分支：`git push origin main`。
 
-5. **触发与结果输出**：
+5. **触发构建并轮询状态（发布验证核心步骤）**：
 
-* 通知用户代码及 Tag 已成功推送。
-* （可选）自动调用 JitPack API 预热构建：
+* 自动调用 JitPack API 触发构建：
   `curl -s "https://jitpack.io/api/builds/com.github.{用户名}.{仓库名}/{版本号}"`
-* 用以下格式输出结果：
+* **轮询构建状态**：每隔 **10 秒** 查询一次 JitPack 构建状态，最多轮询 **30 次**（总计 5 分钟）：
+  * 调用 `curl -s "https://jitpack.io/api/builds/com.github.{用户名}.{仓库名}/{版本号}"` 获取构建状态 JSON。
+  * 从返回的 JSON 中提取本次版本 `{版本号}` 对应的状态字段值。
+  * **状态判断**：
+    - `"ok"` → 构建成功，立即停止轮询，输出成功结果。
+    - `"Error"` → 构建失败，立即停止轮询，并**获取失败原因**：
+      * 调用 `curl -s "https://jitpack.io/api/builds/com.github.{用户名}.{仓库名}/{版本号}/log"` 获取构建日志。
+      * 从日志中提取关键错误信息（如编译错误、依赖缺失、插件冲突等），整理后告知用户。
+    - 其他值或版本号未出现在返回 JSON 中 → 构建仍在进行中，继续轮询。
+  * 超过 30 次轮询仍未得到 `"ok"` 或 `"Error"` → 视为超时，告知用户构建时间过长，建议手动查看。
+
+6. **输出最终结果**：
+
+* **构建成功时**：
   ```
-  ==================== JitPack 发布就绪 ====================
+  ==================== JitPack 发布成功 ====================
   发布版本: {版本号} (已自动递增并更新至 gradle.properties)
   Tag 推送状态: 成功
   环境恢复状态: 成功 (已切回国内镜像并推送到 main)
-  👉 请前往 JitPack 官网查看构建进度或等待依赖生效。
+  JitPack 构建状态: ✅ 成功
+  依赖引用: implementation 'com.github.{用户名}.{仓库名}:{版本号}'
+  ========================================================
+  ```
+
+* **构建失败时**：
+  ```
+  ==================== JitPack 发布失败 ====================
+  发布版本: {版本号} (已自动递增并更新至 gradle.properties)
+  Tag 推送状态: 成功
+  环境恢复状态: 成功 (已切回国内镜像并推送到 main)
+  JitPack 构建状态: ❌ 失败
+  失败原因: {从构建日志中提取的关键错误信息摘要}
+  💡 建议: 请根据上述失败原因排查问题，修复后重新执行 /jitpack-publish 发布新版本。
+  ========================================================
+  ```
+
+* **构建超时时**：
+  ```
+  ==================== JitPack 发布超时 ====================
+  发布版本: {版本号} (已自动递增并更新至 gradle.properties)
+  Tag 推送状态: 成功
+  环境恢复状态: 成功 (已切回国内镜像并推送到 main)
+  JitPack 构建状态: ⏳ 构建超时（5 分钟内未完成）
+  👉 请前往 https://jitpack.io/#{用户名}/{仓库名}/{版本号} 手动查看构建进度。
   ========================================================
   ```
