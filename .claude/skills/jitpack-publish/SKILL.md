@@ -27,14 +27,14 @@ description:
 
 3. **提交快照并打 Tag（防冲突核心步骤）**：
 
-* 提交代码：`git add .` 并在 commit message 中注明 `chore: prepare for JitPack release v{版本号}`。
+* 提交代码：`git add .`，commit message 需遵循 `/git-commit` skill 的约定式提交规范（`<type>: <description>`），根据实际 diff 生成说明（例如 `chore: bump version to 1.0.4 and switch to official Gradle mirror for JitPack release`）。
 * 创建标签：`git tag {版本号}` (若带有 v 前缀请保持统一，如 `v1.1.0`)。
 * **推送标签至远端**：`git push origin {版本号}` （此步骤确保 JitPack 抓取到的绝对是带有官方镜像的干净代码快照）。
 
 4. **恢复本地开发环境**：
 
 * 将镜像重新改回腾讯镜像，并恢复之前注释的插件。
-* 提交代码：`git add .` 并在 commit message 中注明 `chore: restore environment after release`。
+* 提交代码：`git add .`，commit message 遵循约定式提交规范，此时 diff 只有镜像回切一项，如 `chore: 切回腾讯 Gradle 镜像（本地开发用）`。
 * 推送主分支：`git push origin main`。
 
 5. **触发构建并轮询状态（发布验证核心步骤）**：
