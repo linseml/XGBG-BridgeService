@@ -20,14 +20,14 @@ object AEHelper {
      * 初始化数数 SDK
      *
      * 由接入方在 Application.onCreate 中调用，传入 appId 和 serverUrl。
-     * 通过 [AppHelper.isDebug] 判断当前是否为 Debug 环境，决定是否开启 SDK 日志。
+     * 通过 [ServiceHelper.isDebug] 判断当前是否为 Debug 环境，决定是否开启 SDK 日志。
      *
      * @param appId    数数项目 appId，由接入方提供
      * @param serverUrl 数数数据上报地址，由接入方提供
      */
     fun initSDK(appId: String, serverUrl: String) {
         val config = TDConfig.getInstance(context, appId, serverUrl)
-        TDAnalytics.enableLog(AppHelper.isDebug())
+        TDAnalytics.enableLog(ServiceHelper.isDebug())
         TDAnalytics.init(config)
     }
 

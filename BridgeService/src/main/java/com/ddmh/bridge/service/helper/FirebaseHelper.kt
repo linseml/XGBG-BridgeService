@@ -46,7 +46,7 @@ object FirebaseHelper {
      *
      * 调用时机：Application.onCreate() 或库初始化阶段。
      * 通过 [Firebase.analytics] 获取默认实例，
-     * 并根据 [AppHelper.isDebug] 决定是否开启 SDK 日志及 Debug 模式。
+     * 并根据 [ServiceHelper.isDebug] 决定是否开启 SDK 日志及 Debug 模式。
      *
      * ⚠️⚠️⚠️ 【接入方必做】调用此方法前，必须确保：
      *   1. app 模块已添加 apply plugin: 'com.google.gms.google-services'
@@ -65,7 +65,7 @@ object FirebaseHelper {
             // ⚠️⚠️⚠️ 【接入方注意】调试事件实时上报需在设备上执行:
             // adb shell setprop debug.firebase.analytics.app <package_name>
             // 可使事件立即上报到 Firebase 后台，无需等待批量窗口
-            if (AppHelper.isDebug()) {
+            if (ServiceHelper.isDebug()) {
                 LogX.d(TAG, "Firebase Analytics Debug 模式已开启")
             }
 

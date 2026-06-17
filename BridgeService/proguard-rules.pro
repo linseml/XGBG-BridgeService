@@ -11,7 +11,7 @@
 # ========================
 -keep class com.ddmh.bridge.service.helper.AEHelper { *; }
 -keep class com.ddmh.bridge.service.helper.AFHelper { *; }
--keep class com.ddmh.bridge.service.helper.AppHelper { *; }
+-keep class com.ddmh.bridge.service.helper.ServiceHelper { *; }
 -keep class com.ddmh.bridge.service.helper.FirebaseHelper { *; }
 -keep class com.ddmh.bridge.service.helper.GooglePay { *; }
 -keep class com.ddmh.bridge.service.helper.SmartRefreshHelper { *; }

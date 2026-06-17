@@ -43,7 +43,7 @@ object AFHelper {
         this.key = key
         val startTime = System.currentTimeMillis()
         LogX.d(TAG, "AppsFlyer SDK 开始初始化, key=${key.take(6)}***")
-        AppsFlyerLib.getInstance().setDebugLog(AppHelper.isDebug())
+        AppsFlyerLib.getInstance().setDebugLog(ServiceHelper.isDebug())
         AppsFlyerLib.getInstance().init(key, object : AppsFlyerConversionListener {
 
             /**
@@ -146,7 +146,7 @@ object AFHelper {
             val afPurchaseClient = PurchaseClient.Builder(context, Store.GOOGLE)
                 .logSubscriptions(true) // 自动记录订阅购买并上报
                 .autoLogInApps(true) // 自动记录一次性内购并上报
-                .setSandbox(AppHelper.isDebug()) // Debug 模式下使用沙盒验证环境，Release 使用正式环境
+                .setSandbox(ServiceHelper.isDebug()) // Debug 模式下使用沙盒验证环境，Release 使用正式环境
                 .setSubscriptionValidationResultListener(mSubscriptionPurchaseListener) // 订阅验证结果监听
                 .setInAppValidationResultListener(mInAppPurchaseListener) // 内购验证结果监听
                 .build()

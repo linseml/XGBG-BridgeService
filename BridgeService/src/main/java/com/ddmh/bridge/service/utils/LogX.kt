@@ -1,7 +1,7 @@
 package com.ddmh.bridge.service.utils
 
 import android.util.Log
-import com.ddmh.bridge.service.helper.AppHelper.isDebug
+import com.ddmh.bridge.service.helper.ServiceHelper.isDebug
 
 /**
  * @Description: 

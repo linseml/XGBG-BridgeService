@@ -24,9 +24,9 @@ import java.util.concurrent.ConcurrentHashMap
  *
  * ⚠️⚠️⚠️ 【接入方必读】使用 SmartRefreshLayout 前需完成以下步骤：
  * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- * 1. 确保 AppHelper.init() 已在 Application.onCreate() 中调用
+ * 1. 确保 ServiceHelper.init() 已在 Application.onCreate() 中调用
  *    （否则 res.getString 将因 Context 缺失而失败）
- * 2. 在 AppHelper.init() 之后调用 SmartRefreshHelper.initSmartRefreshLanguage()
+ * 2. 在 ServiceHelper.init() 之后调用 SmartRefreshHelper.initSmartRefreshLanguage()
  *    （必须在首次创建 SmartRefreshLayout 之前完成文案替换）
  * 3. 如需自定义刷新文案，在接入方 app 模块的 strings.xml 中
  *    覆盖同名资源即可（如 srl_header_pulling），无需修改本类
@@ -63,7 +63,7 @@ object SmartRefreshHelper {
      * 替换为库内 strings.xml 定义的中文字符串资源值。
      * 初始化完成后，后续所有 SmartRefreshLayout 实例都将显示替换后的文案。
      *
-     * ⚠️⚠️⚠️ 【接入方必做】调用此方法前，必须确保 AppHelper.init() 已执行，
+     * ⚠️⚠️⚠️ 【接入方必做】调用此方法前，必须确保 ServiceHelper.init() 已执行，
      * 否则 [res]（全局 Resources）无法获取字符串资源，导致初始化失败但不会 crash。
      *
      * ⚠️⚠️⚠️ 【接入方必做】必须在首次创建 SmartRefreshLayout 实例之前调用此方法，

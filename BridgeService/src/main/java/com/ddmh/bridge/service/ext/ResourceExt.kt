@@ -4,6 +4,7 @@ package com.ddmh.bridge.service.ext
 import android.R
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.app.Application
 import android.content.Context
 import android.content.res.Resources
 import android.os.Build
@@ -15,14 +16,22 @@ import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import androidx.annotation.LayoutRes
 import androidx.core.content.ContextCompat
-import com.ddmh.bridge.service.helper.AppHelper
+import com.ddmh.bridge.service.helper.ServiceHelper
+
 
 /**
- * 全局 Application Context，通过 [AppHelper.getApplication] 获取。
+ * 全局 Application 实例，通过 [ServiceHelper.getApplication] 获取。
+ * 可在任何位置使用，无需依赖 Activity 或 Fragment 生命周期。
+ */
+val application: Application
+    get() = ServiceHelper.getApplication()
+
+/**
+ * 全局 Application Context，通过 [ServiceHelper.getApplication] 获取。
  * 可在任何位置使用，避免直接传递 Context 的麻烦。
  */
 val context: Context
-    get() = AppHelper.getApplication()
+    get() = ServiceHelper.getApplication()
 
 /**
  * 全局 Resources 对象，等效于 [context].[android.content.Context.getResources]。

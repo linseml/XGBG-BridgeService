@@ -11,21 +11,21 @@ import android.app.Application
  *
  * ⚠️⚠️⚠️ 【接入方必读】使用本库前必须完成以下步骤：
  * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- * 1. 在 Application.onCreate() 中调用 AppHelper.init(application, isDebug)
- * 2. 必须在所有其他 Helper 初始化之前调用，因为以下组件依赖 AppHelper：
- *    - AFHelper.initSDK() → 需要 AppHelper.getApplication() 和 AppHelper.isDebug()
- *    - AEHelper.initSDK() → 需要 AppHelper.getApplication() 和 AppHelper.isDebug()
- *    - FirebaseHelper.initSDK() → 需要 AppHelper.isDebug()
- *    - SmartRefreshHelper.initSmartRefreshLanguage() → 需要 res（依赖 AppHelper.getApplication()）
- *    - GooglePay.init() → 需要 AppHelper.getApplication()
- *    - LogX → 需要 AppHelper.isDebug() 决定是否输出日志
- *    - ResourceExt（context / res）→ 需要 AppHelper.getApplication()
+ * 1. 在 Application.onCreate() 中调用 ServiceHelper.init(application, isDebug)
+ * 2. 必须在所有其他 Helper 初始化之前调用，因为以下组件依赖 ServiceHelper：
+ *    - AFHelper.initSDK() → 需要 ServiceHelper.getApplication() 和 ServiceHelper.isDebug()
+ *    - AEHelper.initSDK() → 需要 ServiceHelper.getApplication() 和 ServiceHelper.isDebug()
+ *    - FirebaseHelper.initSDK() → 需要 ServiceHelper.isDebug()
+ *    - SmartRefreshHelper.initSmartRefreshLanguage() → 需要 res（依赖 ServiceHelper.getApplication()）
+ *    - GooglePay.init() → 需要 ServiceHelper.getApplication()
+ *    - LogX → 需要 ServiceHelper.isDebug() 决定是否输出日志
+ *    - ResourceExt（context / res）→ 需要 ServiceHelper.getApplication()
  * ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  *
  * @author 𝑳𝒆𝒆𝒔𝒊𝒏
  * @since 2026/06/12
  */
-object AppHelper {
+object ServiceHelper {
 
     /**
      * 全局 Application 实例
@@ -64,7 +64,7 @@ object AppHelper {
      * ⚠️⚠️⚠️ 【接入方必做】初始化顺序要求：
      * ```
      * // Application.onCreate() 中
-     * AppHelper.init(this, BuildConfig.DEBUG)  // ← 必须最先调用
+     * ServiceHelper.init(this, BuildConfig.DEBUG)  // ← 必须最先调用
      * AFHelper.initSDK("af_dev_key")
      * AEHelper.initSDK("ta_app_id", "ta_server_url")
      * FirebaseHelper.initSDK()
