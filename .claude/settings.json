@@ -4,7 +4,8 @@
       "Bash(git *)",
       "Bash(curl *)",
       "Bash(sleep *)",
-      "Bash(sed *)"
+      "Bash(sed *)",
+      "Edit(gradle.properties)"
     ]
   }
 }

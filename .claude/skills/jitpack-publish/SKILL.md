@@ -24,7 +24,7 @@ description:
        * 如果 `Z > 99`，则 `Z` 归零 (`0`)，并将第二位 `Y` (Minor) 加 1。
        * 如果 `Y > 99`，则 `Y` 归零 (`0`)，并将第一位 `X` (Major) 加 1。
        * *(示例：`1.0.99` 递增为 `1.1.0`；`1.99.99` 递增为 `2.0.0`)*
-   * **同步配置**：使用 `sed` 命令将新版本号写回 `gradle.properties` 的 `libVersion` 字段（匹配 `Bash(sed *)` 白名单，免确认）。**不要用 Edit 工具**。
+   * **同步配置**：使用 `sed` 或 `Edit` 工具将新版本号写回 `gradle.properties` 的 `libVersion` 字段。两者均匹配白名单（`Bash(sed *)` / `Edit(gradle.properties)`），免确认。
 
 2. **提交并推送版本升级**（调用 /git-commit skill）：
 
