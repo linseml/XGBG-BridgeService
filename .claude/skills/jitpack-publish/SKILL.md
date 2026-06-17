@@ -62,7 +62,7 @@ description:
 
    **必须合并为一条 Bash 脚本执行，轮询结果逐行输出，不停顿不确认**：
 
-   - **无 sleep**：每次查询完后立马发起下一次查询，直到查到 `ok` 或 `Error` 才退出。
+   - **无限轮询**：持续查询直到出现 `ok` 或 `Error` 才退出，每次查询完等待 3 秒后发起下一次。
    - **输出格式**：`第 N 次查询 | HH:MM:SS | 状态 → 结果`
 
    ```bash
@@ -71,7 +71,7 @@ description:
 
    STATUS=""
    i=0
-   while [ $i -lt 30 ]; do
+   while true; do
      i=$((i + 1))
      TIME=$(date +"%H:%M:%S")
      STATUS=$(curl -s "https://jitpack.io/api/builds/com.github.{用户名}.{仓库名}/{版本号}" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('{版本号}','none').get('status','none') if isinstance(d.get('{版本号}',{}),dict) else d.get('status','none'))")
@@ -85,20 +85,16 @@ description:
        fi
        break
      fi
+     sleep 3
    done
-
-   if [ "$STATUS" != "ok" ] && [ "$STATUS" != "Error" ]; then
-     echo "⏳ 超时（30 次查询仍未完成），请手动查看"
-   fi
    ```
 
    - 状态映射：`ok` → ✅ 成功，`Error` → ❌ 失败，其他 → ⏳ 构建中
    - 构建失败时自动拉取并输出完整构建日志
-   - 超过 30 次仍未完成 → 超时提示
 
 6. **输出最终结果**：
 
-   根据步骤 5 的脚本输出判断最终状态，提供 JitPack 构建详情链接：
+   根据步骤 5 的脚本输出判断最终状态（只有成功或失败两种），提供 JitPack 构建详情链接：
    `https://jitpack.io/#{用户名}/{仓库名}/{版本号}`
 
    * **构建成功时**：
@@ -124,19 +120,6 @@ description:
      JitPack 构建状态: ❌ 失败
      失败原因: {从构建日志中提取的关键错误信息摘要}
      💡 建议: 请根据上述失败原因排查问题，修复后重新执行 /jitpack-publish 发布新版本。
-     构建详情: https://jitpack.io/#{用户名}/{仓库名}/{版本号}
-     ========================================================
-     ```
-
-   * **构建超时时**：
-     ```
-     ==================== JitPack 发布超时 ====================
-     发布版本: {版本号} (已自动递增并更新至 gradle.properties)
-     main 提交: ✅ 版本升级（通过 /git-commit），不含镜像切换
-     Tag: ✅ 推送成功（临时 commit 含官方镜像，仅供 JitPack 构建）
-     本地环境: ✅ 已无痕恢复（git reset + checkout，工作区干净）
-     JitPack 构建状态: ⏳ 超时（5 分钟内未完成）
-     👉 请前往构建详情页手动查看进度。
      构建详情: https://jitpack.io/#{用户名}/{仓库名}/{版本号}
      ========================================================
      ```
