@@ -1,6 +1,7 @@
 ---
 name: usage-cost
-description: 查询今日 API 消耗金额与可用余额（总预算 100），接口为 http://43.138.240.176/v1/usage?days=0&apiKey=。TRIGGER when user mentions: 查询余额, 查询消耗, token消耗, 今日消耗, 剩余额度, 额度查询, 可用余额, usage, cost, 花了多少, 还剩多少。
+description:
+  查询今日 API 消耗金额与可  用余额（总预算 100），接口为 http://43.138.240.176/v1/usage?days=0&apiKey=。TRIGGER when user mentions: 查询余额, 查询消耗, token消耗, 今日消耗, 剩余额度, 额度查询, 可用余额, usage, cost, 花了多少, 还剩多少。
 ---
 
 你是一个消耗查询助手。当用户调用 `/usage-cost`时，执行以下流程：
