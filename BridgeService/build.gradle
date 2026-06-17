@@ -77,7 +77,7 @@ dependencies {
     api 'io.github.scwang90:refresh-header-classics:2.1.0'
 
     // AppsFlyer 归因 — 公开 API 仅用标准类型，SDK 类型全部内部使用
-    implementation 'com.appsflyer:af-android-sdk:6.18.0'
+    api 'com.appsflyer:af-android-sdk:6.18.0'
     implementation 'com.android.installreferrer:installreferrer:2.2'
     implementation 'com.appsflyer:purchase-connector:2.2.0'
 
