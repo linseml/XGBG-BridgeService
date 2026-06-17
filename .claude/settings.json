@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git *)",
+      "Bash(curl *)",
+      "Bash(sleep *)",
+      "Edit(gradle/wrapper/gradle-wrapper.properties)",
+      "Edit(build.gradle)"
+    ]
+  }
+}

@@ -1,7 +1,7 @@
 ---
 name: jitpack-publish
 description:
-  自动执行 Android 库的 JitPack 发布流程（单次有效提交版）。版本升级通过 /git-commit 单独提交并推送；官方镜像切换仅以临时 commit 存在于 Tag 上，本地 reset 后瞬间无痕恢复开发环境。TRIGGER when user mentions: 发布 JitPack, 打包 JitPack, 推送 JitPack, JitPack release。
+  自动执行 Android 库的 JitPack 发布流程（单次有效提交版）。版本升级通过 /git-commit 单独提交并推送；官方镜像切换仅以临时 commit 存在于 Tag 上，本地 reset 后瞬间无痕恢复开发环境。步骤 2 完成后所有操作免确认直接执行。TRIGGER when user mentions: 发布 JitPack, 打包 JitPack, 推送 JitPack, JitPack release。
 ---
 
 你是一个 JitPack 发布助手。当用户调用 `/jitpack-publish` 或要求发布时，严格执行以下流程：
@@ -11,6 +11,7 @@ description:
 - **main 分支提交必须干净**：只有版本递增和代码改动，绝不含 JitPack 构建环境切换。
 - **官方镜像只存在于 Tag**：通过临时 commit 打 Tag，推送后本地回退，瞬间恢复开发环境。
 - **本地环境即刻无痕恢复**：无论构建成败，均保持本地开发环境连贯，失败排查以 JitPack 云端 Log 为准。
+- **步骤 2 完成后免确认**：镜像切换、打 Tag、轮询等后续操作均为自动化流程，无需用户逐条确认。
 
 ## 步骤
 
@@ -30,6 +31,7 @@ description:
    * 调用 `/git-commit` skill 提交步骤 1 产生的版本号变更。
    * skill 会自动完成 add、生成中文约定式提交说明（如 `chore: 升级版本至 1.0.7`）、commit 和 push。
    * **此为 main 分支上的唯一有效提交。** 提交内容仅为版本递增，不含任何镜像切换变更。
+   * **此步骤完成后，后续所有操作免确认直接执行。**
 
 3. **切换官方构建环境**：
 
@@ -37,56 +39,66 @@ description:
    * 注释或移除可能导致纯依赖库报错的插件（如 `google-services`）。
    * **注意：这些变更暂不提交，仅供步骤 4 的临时 Tag 使用。**
 
-4. **打 Tag 并推送（临时 commit 机制）**：
+4. **打 Tag 并推送（临时 commit 机制，单条命令执行）**：
 
    核心思路：用一个临时 commit 携带官方镜像配置打 Tag → 推送 Tag → 本地回退临时 commit → 开发环境瞬间恢复，main 历史无痕。
 
-   * **4a. 创建临时 commit**：
-     ```bash
-     git add .
-     git commit -m "chore: 临时切换官方镜像（仅供 JitPack Tag 使用）"
-     ```
-   * **4b. 打 Tag 并推送**：
-     ```bash
-     git tag {版本号}               # 若此前带有 v 前缀请保持统一，如 v1.1.0
-     git push origin {版本号}       # Tag 指向临时 commit，JitPack 从此构建
-     ```
-   * **4c. 回退临时 commit，瞬间恢复开发环境**：
-     ```bash
-     git reset HEAD~1              # 临时 commit 立即消失，镜像变更回到工作区（unstaged）
-     git checkout -- .             # 从 HEAD 恢复所有文件，工作区瞬间回到国内镜像状态，干净无痕
-     ```
+   **必须合并为一条 Bash 命令执行，中间不停顿、不等待确认**：
 
-   回退后：HEAD 回到步骤 2 的版本升级提交（国内镜像），工作区完全干净——无需手动编辑恢复。
+   ```bash
+   git add . && \
+   git commit -m "chore: 临时切换官方镜像（仅供 JitPack Tag 使用）" && \
+   git tag {版本号} && \
+   git push origin {版本号} && \
+   git reset HEAD~1 && \
+   git checkout -- . && \
+   git status
+   ```
 
-5. **触发构建并轮询状态**：
+   - 若此前 Tag 带有 v 前缀请保持统一（如 `v1.1.0`）。
+   - 执行完毕后 HEAD 回到步骤 2 的版本升级提交（国内镜像），工作区完全干净。
 
-   * 自动调用 JitPack API 触发构建：
-     `curl -s "https://jitpack.io/api/builds/com.github.{用户名}.{仓库名}/{版本号}"`
-   * **轮询构建状态**：每隔 **10 秒** 查询一次 JitPack 构建状态，最多轮询 **30 次**（总计 5 分钟）：
-     * 调用 `curl -s "https://jitpack.io/api/builds/com.github.{用户名}.{仓库名}/{版本号}"` 获取构建状态 JSON。
-     * 从返回的 JSON 中提取本次版本 `{版本号}` 对应的状态字段值。
-     * **每次查询后必须向用户输出当前结果**，同时展示 API 原始返回值和可读状态，格式为：
-       ```
-       第 1 次查询（10秒）: none → ⏳ 构建中
-       第 2 次查询（20秒）: none → ⏳ 构建中
-       第 5 次查询（50秒）: ok   → ✅ 成功
-       ```
-       其中 API 返回值与可读状态的映射：
-       - `"ok"` → ✅ 成功
-       - `"Error"` → ❌ 失败
-       - 其他（如 `none`、`pending`） → ⏳ 构建中
-     * **状态判断**：
-       - `"ok"` → 构建成功，立即停止轮询，输出成功结果。
-       - `"Error"` → 构建失败，立即停止轮询，并**获取失败原因**：
-         * 调用 `curl -s "https://jitpack.io/api/builds/com.github.{用户名}.{仓库名}/{版本号}/log"` 获取构建日志。
-         * 从日志中提取关键错误信息（如编译错误、依赖缺失、插件冲突等），整理后告知用户。
-       - 其他值或版本号未出现在返回 JSON 中 → 构建仍在进行中，继续轮询。
-     * 超过 30 次轮询仍未得到 `"ok"` 或 `"Error"` → 视为超时，告知用户构建时间过长，建议手动查看。
+5. **触发构建并轮询状态（单条 while 循环脚本执行）**：
+
+   **必须合并为一条 Bash 脚本执行，轮询结果逐行输出，不停顿不确认**：
+
+   - **无 sleep**：每次查询完后立马发起下一次查询，直到查到 `ok` 或 `Error` 才退出。
+   - **输出格式**：`第 N 次查询 | HH:MM:SS | 状态 → 结果`
+
+   ```bash
+   # 触发构建
+   curl -s "https://jitpack.io/api/builds/com.github.{用户名}.{仓库名}/{版本号}" > /dev/null
+
+   STATUS=""
+   i=0
+   while [ $i -lt 30 ]; do
+     i=$((i + 1))
+     TIME=$(date +"%H:%M:%S")
+     STATUS=$(curl -s "https://jitpack.io/api/builds/com.github.{用户名}.{仓库名}/{版本号}" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('{版本号}','none').get('status','none') if isinstance(d.get('{版本号}',{}),dict) else d.get('status','none'))")
+     LABEL=""
+     if [ "$STATUS" = "ok" ]; then LABEL="✅ 成功"; elif [ "$STATUS" = "Error" ]; then LABEL="❌ 失败"; else LABEL="⏳ 构建中"; fi
+     echo "第 ${i} 次查询 | ${TIME} | ${STATUS} → ${LABEL}"
+     if [ "$STATUS" = "ok" ] || [ "$STATUS" = "Error" ]; then
+       if [ "$STATUS" = "Error" ]; then
+         echo "--- 构建失败，获取日志 ---"
+         curl -s "https://jitpack.io/api/builds/com.github.{用户名}.{仓库名}/{版本号}/log"
+       fi
+       break
+     fi
+   done
+
+   if [ "$STATUS" != "ok" ] && [ "$STATUS" != "Error" ]; then
+     echo "⏳ 超时（30 次查询仍未完成），请手动查看"
+   fi
+   ```
+
+   - 状态映射：`ok` → ✅ 成功，`Error` → ❌ 失败，其他 → ⏳ 构建中
+   - 构建失败时自动拉取并输出完整构建日志
+   - 超过 30 次仍未完成 → 超时提示
 
 6. **输出最终结果**：
 
-   所有三种结果均需提供 JitPack 构建详情链接，供用户自主查看：
+   根据步骤 5 的脚本输出判断最终状态，提供 JitPack 构建详情链接：
    `https://jitpack.io/#{用户名}/{仓库名}/{版本号}`
 
    * **构建成功时**：
