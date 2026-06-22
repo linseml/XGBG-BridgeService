@@ -5,7 +5,18 @@
       "Bash(curl *)",
       "Bash(sleep *)",
       "Bash(sed *)",
-      "Edit(gradle.properties)"
+      "Edit(gradle.properties)",
+      "Bash(./gradlew *)",
+      "Bash(gradlew *)",
+      "Bash(python3 *)",
+      "mcp__plugin_tcenter-ai-android-plugin_lanhu__lanhu_get_designs",
+      "mcp__plugin_tcenter-ai-android-plugin_lanhu__lanhu_get_ai_analyze_design_result",
+      "mcp__plugin_tcenter-ai-android-plugin_lanhu__lanhu_get_design_slices",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep"
     ]
   }
 }
