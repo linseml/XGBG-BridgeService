@@ -10,9 +10,9 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
+import com.ddmh.bridge.service.utils.MediaUtils.imagePicker
 import com.ddmh.bridge.service.utils.MediaUtils.multiPhotoPicker
 import com.ddmh.bridge.service.utils.MediaUtils.singlePhotoPicker
-import com.ddmh.bridge.service.utils.MediaUtils.imagePicker
 import java.io.File
 import java.io.FileOutputStream
 

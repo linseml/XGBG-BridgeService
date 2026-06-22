@@ -11,6 +11,13 @@ import java.util.Locale
 object DateUtils {
 
     /**
+     * 获取当前日期+时间字符串，格式为 `yyyy-MM-dd HH:mm:ss`。
+     * 例如：`2026-06-16 14:30:00`
+     */
+    val nowDateTime: String
+        get() = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
+
+    /**
      * 获取当前日期字符串，格式为 `yyyy-MM-dd`。
      * 例如：`2026-06-16`
      */
@@ -18,17 +25,10 @@ object DateUtils {
         get() = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
 
     /**
-     * 获取当前日期+时间字符串，格式为 `yyyy-MM-dd HH:mm:ss`。
-     * 例如：`2026-06-16 14:30:00`
-     */
-    val nowTime: String
-        get() = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
-
-    /**
      * 获取当前时间字符串，格式为 `HH:mm:ss`。
      * 例如：`14:30:00`
      */
-    val nowDateTime: String
+    val nowTime: String
         get() = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
 
 
