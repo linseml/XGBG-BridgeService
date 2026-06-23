@@ -12,9 +12,11 @@ description:
     * 自动执行 `git status` 查看当前修改、新增或删除的文件列表。
     * 自动执行 `git diff`（或 `git diff --staged`）简要分析代码的具体改动内容。
 2. **确定 Commit Message（提交信息）**：
-    * 检查用户在触发指令时是否提供了具体说明（例如：“提交代码，修复了空指针异常”）。
-    * **如果未提供**：根据第一步的差异分析，自动推导并生成一句符合“约定式提交（Conventional
-      Commits）”规范的中文说明。
+    * 检查用户在触发指令时是否已提供了具体说明（例如：”提交代码，修复了空指针异常”）。
+    * **如果未提供**：根据第一步的差异分析，自动推导生成一条建议的 commit message，然后使用
+      `AskUserQuestion` 询问用户确认：
+        - 选项1：使用建议的 commit message（直接显示建议内容作为选项描述）
+        - 选项2：用户自定义输入（选择 “Other” 自行填写）
     * **规范格式**：`<type>: <description>`
         * `feat`: 新增功能
         * `fix`: 修复 Bug
@@ -23,15 +25,16 @@ description:
         * `refactor`: 代码重构（既不新增功能，也不修复 Bug）
         * `chore`: 构建过程或辅助工具的变动
     * *(示例：`fix: 修复首页列表数据加载为空导致的崩溃`)*
-3. **执行提交操作**：
-    * 将所有变更加入暂存区：`git add .`（除非用户明确指明只提交特定文件）。
-    * 创建提交：`git commit -m "{生成或用户提供的 Commit Message}"`。
-4. **推送到远端仓库**：
-    * 自动获取当前所在的分支名称（例如通过 `git branch --show-current`）。
-    * 执行推送：`git push origin {当前分支}`。
-5. **异常处理与结果输出**：
-    * 如果在 `push` 阶段遇到冲突（Conflict）或落后于远端（Rejected），立即停止并把 Git 原始报错信息抛出，提醒用户先
-      `git pull`。
+3. **一次性执行提交和推送**：
+    * 将分析、暂存、提交、推送合并为**一条 Bash 命令**执行，避免多次权限确认：
+    ```bash
+    git add . && \
+    BRANCH=$(git branch --show-current) && \
+    git commit -m "{生成或用户提供的 Commit Message}" && \
+    git push origin $BRANCH
+    ```
+    * 如果用户明确指明只提交特定文件，将 `git add .` 替换为 `git add {指定文件}`。
+    * 如果 push 遇到冲突或落后于远端，把 Git 原始报错信息抛出，提醒用户先 `git pull`。
     * 如果全部成功，用以下格式输出结果：
    ```
    ==================== 代码提交成功 ====================
