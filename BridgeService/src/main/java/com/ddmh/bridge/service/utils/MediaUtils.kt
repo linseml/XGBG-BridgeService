@@ -11,8 +11,38 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.fragment.app.Fragment
+import com.ddmh.bridge.service.utils.MediaUtils.MAX_IMAGE_SIZE
+import com.ddmh.bridge.service.utils.MediaUtils.imagePicker
+import com.ddmh.bridge.service.utils.MediaUtils.multiPhotoPicker
+import com.ddmh.bridge.service.utils.MediaUtils.singlePhotoPicker
 import java.io.File
 import java.io.FileOutputStream
+
+/**
+ * 多选图片的启动参数，包装 [PickVisualMediaRequest] 与动态最大选择数量。
+ *
+ * 用于 [multiPhotoPicker] 返回的 Launcher，在启动时传入当前剩余可选数量，
+ * 使 Android 14+ 的 Photo Picker UI 层实时限制可选数量。
+ *
+ * @param request   图片选择请求（如 ImageOnly）
+ * @param maxSelect 本次启动允许的最大选择数量，默认不限制
+ */
+data class PickVisualMediaRequestWithMax(
+    val request: PickVisualMediaRequest,
+    val maxSelect: Int = Int.MAX_VALUE
+)
+
+/**
+ * 多选图片的回调结果，携带 [maxSelect] 以在 Android 13 及以下做截断兜底。
+ *
+ * @param uris      选中的 Uri 列表
+ * @param maxSelect 本次启动时传入的最大选择数量
+ */
+data class PickMultipleVisualMediaResult(
+    val uris: List<Uri>,
+    val maxSelect: Int
+)
 
 /**
  * 媒体选择工具类，封装 Android Photo Picker 的单选/多选图片功能，
@@ -21,18 +51,18 @@ import java.io.FileOutputStream
  *
  * 使用方式：
  * ```kotlin
- * // 1. 在 Activity中注册 Launcher
+ * // 1. 单选：注册 Launcher，启动时调用 imagePicker()
  * private val singlePicker = singlePhotoPicker { path ->
  *     path?.let { showToast("选中: $it") }
  * }
+ * singlePicker.imagePicker()   // 启动单选
  *
- * private val multiPicker = multiPhotoPicker(maxSelect = 3) { paths ->
+ * // 2. 多选：注册 Launcher（无固定 maxSelect），启动时动态传入限制数量
+ * private val multiPicker = multiPhotoPicker { paths ->
  *     showToast("选中 ${paths.size} 张")
  * }
- *
- * // 2. 在需要触发选择时调用 imagePicker()
- * singlePicker.imagePicker()   // 单选
- * multiPicker.imagePicker()    // 多选（最多3张）
+ * multiPicker.imagePicker(maxSelect = 3)                    // 本次最多选 3 张
+ * multiPicker.imagePicker(maxSelect = 3 - currentCount)     // 根据剩余槽位动态限制
  * ```
  *
  */
@@ -60,12 +90,13 @@ object MediaUtils {
      * @return     文件大小（字节），无法获取时返回 null
      */
     private fun Context.queryFileSize(uri: Uri): Long? {
-        return contentResolver.query(uri, arrayOf(OpenableColumns.SIZE), null, null, null)?.use { cursor ->
-            if (cursor.moveToFirst()) {
-                val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
-                if (sizeIndex >= 0 && !cursor.isNull(sizeIndex)) cursor.getLong(sizeIndex) else null
-            } else null
-        }
+        return contentResolver.query(uri, arrayOf(OpenableColumns.SIZE), null, null, null)
+            ?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
+                    if (sizeIndex >= 0 && !cursor.isNull(sizeIndex)) cursor.getLong(sizeIndex) else null
+                } else null
+            }
     }
 
     /**
@@ -125,37 +156,96 @@ object MediaUtils {
         }
 
     /**
-     * 注册多张图片选择器（Photo Picker 多选模式，支持最大选择数量）。
-     *
-     * - Android 14+：UI 层直接限制可选数量（[PickMultipleVisualMediaWithMax]）。
-     * - Android 13 及以下：UI 不限制数量，通过 [take] 截断作为兜底。
+     * 注册多张图片选择器（Photo Picker 多选模式）。
      *
      * 在 Activity.onCreate 中调用以注册 Launcher，之后通过 [imagePicker] 触发选择。
      *
-     * @param maxSelect  最大可选数量，默认不限制（Int.MAX_VALUE）
+     * 最大选择数量不在注册时固定，而是在每次启动时通过 [imagePicker] 的 maxSelect 参数动态传入：
+     * - Android 14+：UI 层直接限制可选数量（[PickMultipleVisualMediaWithMax]）。
+     * - Android 13 及以下：UI 不限制数量，回调中通过 [take] 截断兜底。
+     *
      * @param onResult   选择结果回调，参数为缓存文件路径列表
      * @return           可用于 [imagePicker] 的 ActivityResultLauncher
      */
     fun ComponentActivity.multiPhotoPicker(
-        maxSelect: Int = Int.MAX_VALUE,
         onResult: (paths: List<String>) -> Unit
-    ): ActivityResultLauncher<PickVisualMediaRequest> =
-        registerForActivityResult(PickMultipleVisualMediaWithMax(maxSelect)) { uris ->
+    ): ActivityResultLauncher<PickVisualMediaRequestWithMax> =
+        registerForActivityResult(PickMultipleVisualMediaWithMax()) { result ->
             clearPickedCache()
-            // 截断作为兜底：Android 13 及以下 UI 不限制数量，靠此处截断
-            val paths = uris.mapIndexedNotNull { index, uri -> uriToCachePath(uri, index) }.take(maxSelect)
+            // Android 14+ UI 层已限选，Android 13 及以下靠 take 截断兜底
+            val paths = result.uris
+                .mapIndexedNotNull { index, uri -> uriToCachePath(uri, index) }
+                .take(result.maxSelect)
             onResult(paths)
         }
 
     /**
-     * 启动图片选择（仅限图片类型）。
+     * 启动单选图片选择（仅限图片类型）。
      *
-     * 可由 [singlePhotoPicker] 或 [multiPhotoPicker] 返回的 Launcher 调用，
+     * 由 [singlePhotoPicker] 返回的 Launcher 调用，
      * 内部限定 MediaType 为 ImageOnly，过滤视频等其他媒体类型。
      */
     fun ActivityResultLauncher<PickVisualMediaRequest>.imagePicker() {
         launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
     }
+
+    /**
+     * 启动多选图片选择（仅限图片类型），支持动态最大选择数量。
+     *
+     * 由 [multiPhotoPicker] 返回的 Launcher 调用，
+     * 内部限定 MediaType 为 ImageOnly，过滤视频等其他媒体类型。
+     *
+     * @param maxSelect  本次启动允许的最大选择数量，默认不限制（Int.MAX_VALUE）
+     */
+    fun ActivityResultLauncher<PickVisualMediaRequestWithMax>.imagePicker(maxSelect: Int = Int.MAX_VALUE) {
+        launch(
+            PickVisualMediaRequestWithMax(
+                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+                maxSelect
+            )
+        )
+    }
+
+    // ------------------------- Fragment 版本 -------------------------
+
+    /**
+     * 注册单张图片选择器（Photo Picker 单选模式）— Fragment 版本。
+     *
+     * 在 Fragment.onCreate 中调用以注册 Launcher，之后通过 [imagePicker] 触发选择。
+     * 功能与 [ComponentActivity.singlePhotoPicker] 一致，仅注册宿主不同。
+     *
+     * @param onResult  选择结果回调，参数为缓存文件路径或 null
+     * @return          可用于 [imagePicker] 的 ActivityResultLauncher
+     */
+    fun Fragment.singlePhotoPicker(
+        onResult: (path: String?) -> Unit
+    ): ActivityResultLauncher<PickVisualMediaRequest> =
+        registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+            requireContext().clearPickedCache()
+            val path = uri?.let { requireContext().uriToCachePath(it) }
+            onResult(path)
+        }
+
+    /**
+     * 注册多张图片选择器（Photo Picker 多选模式）— Fragment 版本。
+     *
+     * 在 Fragment.onCreate 中调用以注册 Launcher，之后通过 [imagePicker] 触发选择。
+     * 功能与 [ComponentActivity.multiPhotoPicker] 一致，仅注册宿主不同。
+     *
+     * @param onResult   选择结果回调，参数为缓存文件路径列表
+     * @return           可用于 [imagePicker] 的 ActivityResultLauncher
+     */
+    fun Fragment.multiPhotoPicker(
+        onResult: (paths: List<String>) -> Unit
+    ): ActivityResultLauncher<PickVisualMediaRequestWithMax> =
+        registerForActivityResult(PickMultipleVisualMediaWithMax()) { result ->
+            requireContext().clearPickedCache()
+            // Android 14+ UI 层已限选，Android 13 及以下靠 take 截断兜底
+            val paths = result.uris
+                .mapIndexedNotNull { index, uri -> requireContext().uriToCachePath(uri, index) }
+                .take(result.maxSelect)
+            onResult(paths)
+        }
 
 }
 
@@ -167,24 +257,29 @@ object MediaUtils {
  *   让 Photo Picker UI 直接限制可选数量，超选时用户无法继续勾选。
  * - Android 13 及以下：UI 层不支持该 extra，需在回调中通过 [take] 截断兜底。
  *
- * @param maxSelect  最大可选数量，默认不限制
+ * 最大选择数量从 [PickVisualMediaRequestWithMax.maxSelect] 动态读取，
+ * 支持每次启动时传入不同的限制数量。
  */
-private class PickMultipleVisualMediaWithMax(
-    private val maxSelect: Int = Int.MAX_VALUE
-) : ActivityResultContract<PickVisualMediaRequest, List<Uri>>() {
+private class PickMultipleVisualMediaWithMax :
+    ActivityResultContract<PickVisualMediaRequestWithMax, PickMultipleVisualMediaResult>() {
 
     private val baseContract = ActivityResultContracts.PickMultipleVisualMedia()
 
-    override fun createIntent(context: Context, input: PickVisualMediaRequest): Intent {
-        val intent = baseContract.createIntent(context, input)
+    /** 保存每次 createIntent 时传入的 maxSelect，供 parseResult 携带到回调 */
+    private var lastMaxSelect = Int.MAX_VALUE
+
+    override fun createIntent(context: Context, input: PickVisualMediaRequestWithMax): Intent {
+        lastMaxSelect = input.maxSelect
+        val intent = baseContract.createIntent(context, input.request)
         // 只在Android 14+ 支持在 UI 层限制选择数量
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE && maxSelect < Int.MAX_VALUE) {
-            intent.putExtra(MediaStore.EXTRA_PICK_IMAGES_MAX, maxSelect)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE && input.maxSelect < Int.MAX_VALUE) {
+            intent.putExtra(MediaStore.EXTRA_PICK_IMAGES_MAX, input.maxSelect)
         }
         return intent
     }
 
-    override fun parseResult(resultCode: Int, intent: Intent?): List<Uri> {
-        return baseContract.parseResult(resultCode, intent)
+    override fun parseResult(resultCode: Int, intent: Intent?): PickMultipleVisualMediaResult {
+        val uris = baseContract.parseResult(resultCode, intent)
+        return PickMultipleVisualMediaResult(uris, lastMaxSelect)
     }
 }
