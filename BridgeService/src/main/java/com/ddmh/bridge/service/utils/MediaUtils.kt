@@ -5,14 +5,12 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
+import android.provider.OpenableColumns
 import androidx.activity.ComponentActivity
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
-import com.ddmh.bridge.service.utils.MediaUtils.imagePicker
-import com.ddmh.bridge.service.utils.MediaUtils.multiPhotoPicker
-import com.ddmh.bridge.service.utils.MediaUtils.singlePhotoPicker
 import java.io.File
 import java.io.FileOutputStream
 
@@ -40,36 +38,66 @@ import java.io.FileOutputStream
  */
 object MediaUtils {
 
+    /** 单张图片最大允许大小：20 MB，超过此大小视为异常文件，拒绝缓存以防范 OOM */
+    private const val MAX_IMAGE_SIZE = 20 * 1024 * 1024L
+
     /**
      * 清理 cacheDir 下所有已累积的 picked_ 前缀缓存图片。
      *
-     * 每次选图都会在 cacheDir 中生成 picked_xxx.jpg 文件，
-     * 为防止缓存无限累积，在 uriToCachePath 执行前调用此方法清除旧文件。
+     * 每次选图都会在 cacheDir 中生成 picked_ 前缀文件，
+     * 为防止缓存无限累积，在选图回调入口调用此方法一次性清除旧文件。
      */
     private fun Context.clearPickedCache() {
         cacheDir.listFiles()?.filter { it.name.startsWith("picked_") }?.forEach { it.delete() }
     }
 
     /**
+     * 查询 ContentProvider Uri 对应的文件大小。
+     *
+     * 通过 [OpenableColumns.SIZE] 列查询，若查询失败或大小不可获取则返回 null。
+     *
+     * @param uri  ContentProvider Uri
+     * @return     文件大小（字节），无法获取时返回 null
+     */
+    private fun Context.queryFileSize(uri: Uri): Long? {
+        return contentResolver.query(uri, arrayOf(OpenableColumns.SIZE), null, null, null)?.use { cursor ->
+            if (cursor.moveToFirst()) {
+                val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
+                if (sizeIndex >= 0 && !cursor.isNull(sizeIndex)) cursor.getLong(sizeIndex) else null
+            } else null
+        }
+    }
+
+    /**
      * 将 Uri 内容复制到应用缓存目录，返回本地文件绝对路径。
      *
-     * 执行前会先清理旧的 picked_ 缓存文件，防止缓存无限累积。
      * Photo Picker 返回的 Uri 属于 ContentProvider，无法直接当文件路径使用，
      * 因此先通过 ContentResolver 读取输入流，再写入缓存文件，便于后续业务直接操作路径。
      *
-     * @param uri  ContentProvider Uri（来自 Photo Picker 等）
-     * @return     缓存文件绝对路径；读写失败时返回 null
+     * 写入前会检查源文件大小，超过 [MAX_IMAGE_SIZE] 时跳过并返回 null，防范 OOM。
+     * 文件名包含序号，避免多选快速连续写入时时间戳冲突。
+     *
+     * @param uri    ContentProvider Uri（来自 Photo Picker 等）
+     * @param index  序号，用于区分多选场景中各图片的缓存文件名
+     * @return       缓存文件绝对路径；读写失败或文件过大时返回 null
      */
-    private fun Context.uriToCachePath(uri: Uri): String? {
+    private fun Context.uriToCachePath(uri: Uri, index: Int = 0): String? {
         try {
-            // 用前清理旧缓存，防止 picked_ 文件无限累积
-            clearPickedCache()
+            // 写入前检查文件大小，防范 OOM
+            val fileSize = queryFileSize(uri)
+            if (fileSize != null && fileSize > MAX_IMAGE_SIZE) return null
+
             val inputStream = contentResolver.openInputStream(uri) ?: return null
-            val file = File(cacheDir, "picked_${System.currentTimeMillis()}.jpg")
+            val file = File(cacheDir, "picked_${System.currentTimeMillis()}_${index}.jpg")
             inputStream.use { input ->
                 FileOutputStream(file).use { output ->
                     input.copyTo(output)
                 }
+            }
+            // 写入后再校验实际文件大小（部分 ContentProvider 不报告 SIZE）
+            if (file.length() > MAX_IMAGE_SIZE) {
+                file.delete()
+                return null
             }
             return file.absolutePath
         } catch (e: Exception) {
@@ -91,6 +119,7 @@ object MediaUtils {
         onResult: (path: String?) -> Unit
     ): ActivityResultLauncher<PickVisualMediaRequest> =
         registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+            clearPickedCache()
             val path = uri?.let { uriToCachePath(it) }
             onResult(path)
         }
@@ -112,8 +141,9 @@ object MediaUtils {
         onResult: (paths: List<String>) -> Unit
     ): ActivityResultLauncher<PickVisualMediaRequest> =
         registerForActivityResult(PickMultipleVisualMediaWithMax(maxSelect)) { uris ->
+            clearPickedCache()
             // 截断作为兜底：Android 13 及以下 UI 不限制数量，靠此处截断
-            val paths = uris.mapNotNull { uriToCachePath(it) }.take(maxSelect)
+            val paths = uris.mapIndexedNotNull { index, uri -> uriToCachePath(uri, index) }.take(maxSelect)
             onResult(paths)
         }
 
