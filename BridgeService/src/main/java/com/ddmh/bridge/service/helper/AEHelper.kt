@@ -37,7 +37,7 @@ object AEHelper {
      * @param code  事件名称
      * @param event 事件特有属性（拓展标签）
      */
-    fun track(code: String, event: HashMap<String, String>? = null) {
+    fun track(code: String, event: HashMap<String, Any>? = null) {
         try {
             if (event != null) {
                 val properties = JSONObject(event as Map<*, *>)
@@ -56,7 +56,7 @@ object AEHelper {
     /**
      * 单一拓展标签
      */
-    fun Pair<String, String>.toEvent(): HashMap<String, String> {
+    fun Pair<String, Any>.toEvent(): HashMap<String, Any> {
         return hashMapOf(this)
     }
 
